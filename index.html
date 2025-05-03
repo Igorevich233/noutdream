@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Ноут Дрим</title>
+  <style>
+    body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+    h1 { text-align: center; margin-bottom: 30px; }
+    #filters { margin-bottom: 20px; text-align: center; }
+    input, button { margin: 5px; padding: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+    .card { background: white; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
+    .card img { max-width: 100%; height: auto; border-radius: 8px; }
+    .card h3 { margin: 10px 0 5px; }
+    .card p { margin: 5px 0; }
+    .card button { margin-top: 10px; background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Ноут Дрим</h1>
+
+  <div id="filters">
+    <input type="text" id="brandFilter" placeholder="Фильтр по бренду">
+    <input type="number" id="priceFilter" placeholder="Макс. цена (₴)">
+    <button onclick="applyFilters()">Применить фильтры</button>
+  </div>
+
+  <div class="grid" id="products"></div>
+
+  <script>
+    let laptops = [];
+
+    fetch('https://dev.compbest.com.ua/xml/compbest_1000_laptop_top_ru_ua.xml')
+      .then(response => response.text())
+      .then(data => {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(data, 'text/xml');
+        const offers = xml.getElementsByTagName('offer');
+        laptops = Array.from(offers).map(offer => ({
+          name: offer.getElementsByTagName('name')[0]?.textContent || '',
+          description: offer.getElementsByTagName('description')[0]?.textContent || '',
+          price: parseFloat(offer.getElementsByTagName('price')[0]?.textContent || '0'),
+          picture: offer.getElementsByTagName('picture')[0]?.textContent || '',
+          vendor: offer.getElementsByTagName('vendor')[0]?.textContent || ''
+        }));
+        renderLaptops(laptops);
+      });
+
+    function renderLaptops(data) {
+      const container = document.getElementById('products');
+      container.innerHTML = '';
+      data.forEach(laptop => {
+        container.innerHTML += `
+          <div class="card">
+            <img src="${laptop.picture}" alt="${laptop.name}">
+            <h3>${laptop.name}</h3>
+            <p>${laptop.description}</p>
+            <p><strong>${laptop.price.toLocaleString()} ₴</strong></p>
+            <button>Купить</button>
+          </div>
+        `;
+      });
+    }
+
+    function applyFilters() {
+      const brand = document.getElementById('brandFilter').value.toLowerCase();
+      const price = parseFloat(document.getElementById('priceFilter').value);
+      const filtered = laptops.filter(l =>
+        (!brand || l.vendor.toLowerCase().includes(brand)) &&
+        (!price || l.price <= price)
+      );
+      renderLaptops(filtered);
+    }
+  </script>
+</body>
+</html>
